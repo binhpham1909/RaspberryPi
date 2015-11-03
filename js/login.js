@@ -4,7 +4,7 @@ var db;
 angular.module('hbiot', ['ionic'])
 .controller('login', function($scope,$http) {
 	$scope.login=function(){
-		$http.post('process/login.php',{'username':$scope.username, 'password':$scope.password, 'action':'login'})
+		$http.post('process/p.login.php',{'username':$scope.username, 'password':$scope.password, 'action':'login'})
 		.then(function(results) {
 			console.log(JSON.stringify(results));
 			if(results.data.result=="ok"){
