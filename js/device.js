@@ -1,213 +1,284 @@
 myapp
-.controller('device', function($scope,$ionicHistory,$ionicPopup,CACHE) {
+.controller('device', function($scope) {
 })
-/*
-.controller('status_temp', function($state,$scope,$ionicHistory,$ionicPopup,CACHE,LOGOUT,$http) {
-	
-	$scope.table="content";
-	$scope.input={};
-	$scope.contents=[];
-	$scope.multicomplete=function(tables){
-		$http.post('process/autocomplete.php',{'type':tables, 'term':$scope.input.name})
-		.then(function(result) {
-			if($scope.input.name==""){
-				$scope.contents=[];
-			}else{
-				$scope.contents=result.data;
-			}
-		},function(err) {
-			console.log(JSON.stringify(err));
-		});
-	};
-	$scope.precal=function(){
-		$http.post('process/chemical.used.php',{'action':'check', 'id':CACHE.getVal('id'), 'table':$scope.table, 'weight':$scope.input.weight})
-		.then(function(result) {
-			$scope.items=result.data;
-		},function(err) {
-			
-		});
-	};
-	$scope.autoselect=function(callback,name){
-		console.log(JSON.stringify(callback));
-		$scope.input.name=callback.name;
-		CACHE.setVal('id',callback.id);
-//		CACHE.sets('username',us.usname);
-//		CACHE.sets('password',us.uspassword);
-		$scope.contents=[];
+.controller('device_add', function($scope,$ionicPopup,DB) {
+	$scope.AddDevice=function(){
+		DB.AddDevice($scope.serial,$scope.name).then(function(result) {
+			$ionicPopup.alert({
+				title: 'Kết quả',
+				template: result.data.result
+			});
+		},function(err) {console.log(err);}
+		);
 	}
-	$scope.logout=function(){
-		LOGOUT.logout().then(
-			function(re){
-				if(re.data.result=="ok"){
-					window.location.replace('login.tpl.php');
+})
+.controller('device_config', function($scope,$ionicPopup,$timeout,DB) {
+	$scope.alerts = { checked: true };
+	$scope.ring = { checked: true };
+	$scope.sms = { checked: true };
+	$scope.email = { checked: true };
+	$scope.alertschange = function() {
+		$timeout(function() {
+			DB.SetConfig("alert",$scope.alerts.checked).then(function(result) {
+				var mypop=$ionicPopup.alert({
+				title: 'Kết quả',
+				template: result.data.result
+				});
+				ReadConfig();
+				$timeout(function() {mypop.close();}, 2000);
+			},function(err) {console.log(err);});
+			});
+	}
+	$scope.ringchange = function() {
+		$timeout(function() {
+			DB.SetConfig("ring",$scope.ring.checked).then(function(result) {
+				var mypop=$ionicPopup.alert({
+					title: 'Kết quả',
+					template: result.data.result
+				});
+				ReadConfig();
+				$timeout(function() {mypop.close();}, 2000);
+			},function(err) {console.log(err);});
+			});
+	}
+	$scope.smschange = function() {
+		$timeout(function() {
+			DB.SetConfig("sms",$scope.sms.checked).then(function(result) {
+				var mypop=$ionicPopup.alert({
+					title: 'Kết quả',
+					template: result.data.result
+				});
+				ReadConfig();
+				$timeout(function() {mypop.close();}, 2000);
+			},function(err) {console.log(err);});
+			});
+	}
+	$scope.emailchange = function() {
+		$timeout(function() {
+			DB.SetConfig("email",$scope.email.checked).then(function(result) {
+				var mypop=$ionicPopup.alert({
+					title: 'Kết quả',
+					template: result.data.result
+				});
+				ReadConfig();
+				$timeout(function() {mypop.close();}, 2000);
+			},function(err) {console.log(err);});
+		});
+	}
+	var ReadConfig=function(){
+		DB.ReadConfig().then(function(result) {
+			if(result.data.alert=='1') $scope.alerts.checked=true; else $scope.alerts.checked=false;
+			if(result.data.ring=='1') $scope.ring.checked=true; else $scope.ring.checked=false;
+			if(result.data.sms=='1') $scope.sms.checked=true; else $scope.sms.checked=false;
+			if(result.data.email=='1') $scope.email.checked=true; else $scope.email.checked=false;
+			},function(err) {console.log(err);}
+		);		
+	}
+	ReadConfig();
+})
+.controller('device_sms', function($scope,$ionicPopup,$timeout,DB) {
+	$scope.show={del:false,edit:false};
+	$scope.users={};
+	$scope.edit = function(id,name) {
+		$scope.tosend={};
+		$scope.tosend.id=id;
+		$scope.tosend.content='sms';
+		var myPopup = $ionicPopup.show({
+			template: '<input type="text" placeholder="Tên" ng-model="tosend.newname"><input type="text" placeholder="SĐT" ng-model="tosend.newphone">',
+			title: name,
+			subTitle: 'Nhập thông tin mới',
+			scope: $scope,
+			buttons: [{ text: 'Cancel' },{text: '<b>Save</b>',type: 'button-positive',
+				onTap: function(e) {
+					if ((!$scope.tosend.newname)||(!$scope.tosend.newphone)) {
+						e.preventDefault();
+					} else {
+						return $scope.tosend;
+					}
 				}
-			},function(err){
-			});;
-	}
-
-})
-
-.controller('status_humi', function($state,$scope,$ionicHistory,$ionicPopup,CACHE,DB) {
-	
-	$scope.input={};
-	$scope.view={};
-	$scope.fields=[];
-	$scope.users=[];
-	$scope.input.action="add";
-	$scope.view.button="Tạo mới";
-	$scope.view.complete=false;
-	$scope.auto=[];
-	$scope.auto.complete=function(name){
-		CACHE.setVal('auto',name);
-		if(CACHE.getVal('fieldid')==null){$scope.view.button="Tạo mới";}
-		var name=CACHE.getVal('auto')+'name';
-		var id=CACHE.getVal('auto')+'id';
-		var items=CACHE.getVal('auto')+'s';
-		DB.autocomplete(CACHE.getVal('auto'),$scope.input[name]).then(function(result) {
-			if($scope.input[name]==undefined){
-				$scope[items]=[];
-				$scope.view.new_name=false;
-				CACHE.clear(id);
-			}else{
-//				console.log(JSON.stringify(result));
-				$scope[items]=result.data;
-			}
-		},function(err) {
-			console.log(JSON.stringify(err));
+			},]
 		});
-		$scope.check_complete();
+		myPopup.then(function(res) {
+			DB.EditUserReceive(res.content,res.id,res.newname,res.newphone).then(function(result) {
+				var mypop=$ionicPopup.alert({
+					title: 'Kết quả',
+					template: result.data.result
+				});
+				Read();
+				$timeout(function() {mypop.close();}, 2000);
+			},function(err) {console.log(err);}
+			);
+		});
+	}
+	$scope.add = function() {
+		$scope.tosend={};
+		$scope.tosend.content='sms';
+		var myPopup = $ionicPopup.show({
+			template: '<input type="text" placeholder="Tên" ng-model="tosend.newname"><p></p><input type="text" placeholder="SĐT" ng-model="tosend.newphone">',
+			title: 'Thêm mới',
+			subTitle: 'Nhập thông tin mới',
+			scope: $scope,
+			buttons: [{ text: 'Cancel' },{text: '<b>Save</b>',type: 'button-positive',
+				onTap: function(e) {
+					if ((!$scope.tosend.newname)||(!$scope.tosend.newphone)) {
+						e.preventDefault();
+					} else {
+						return $scope.tosend;
+					}
+				}
+			},]
+		});
+		myPopup.then(function(res) {
+			DB.AddUserReceive(res.content,res.newname,res.newphone).then(function(result) {
+				var mypop=$ionicPopup.alert({
+					title: 'Kết quả',
+					template: result.data.result
+				});
+				Read();
+				$timeout(function() {mypop.close();}, 2000);
+			},function(err) {console.log(err);}
+			);
+		});
+	}
+	$scope.del = function(id,name,phone) {
+		$scope.tosend={};
+		$scope.tosend.content='sms';
+		$scope.tosend.id=id;
+		var myPopup = $ionicPopup.show({
+			template: name+'<p>'+phone+'</p>',
+			title: 'Xác nhận xóa',
+			subTitle: name,
+			scope: $scope,
+			buttons: [{ text: 'Cancel' },{text: '<b>Xóa</b>',type: 'button-assertive',
+				onTap: function(e) {
+					if (!$scope.tosend.id) {
+						e.preventDefault();
+					} else {
+						return $scope.tosend;
+					}
+				}
+			},]
+		});
+		myPopup.then(function(res) {
+			DB.DelUserReceive(res.content,res.id).then(function(result) {
+				var mypop=$ionicPopup.alert({
+					title: 'Kết quả',
+					template: result.data.result
+				});
+				Read();
+				$timeout(function() {mypop.close();}, 2000);
+			},function(err) {console.log(err);}
+			);				
+		});
 	};
-	$scope.auto.choice=function(callback){
-		var name=CACHE.getVal('auto')+'name';
-		var id=CACHE.getVal('auto')+'id';
-		var items=CACHE.getVal('auto')+'s';
-		if(CACHE.getVal('auto')=='content'){
-			$scope.input=callback;
-			CACHE.setVal('contentid',callback.contentid);
-			CACHE.setVal('chemicalid',callback.chemicalid);
-			CACHE.setVal('typeid',callback.typeid);
-			CACHE.setVal('unitsid',callback.unitsid);
-			CACHE.setVal('fieldid',callback.fieldid);
-			CACHE.setVal('manufactorid',callback.manufactorid);
-			CACHE.setVal('providerid',callback.providerid);
-			CACHE.setVal('purityid',callback.purityid);
-			CACHE.setVal('stateid',callback.stateid);
-			CACHE.setVal('storeid',callback.storeid);
-		}else{
-			$scope.input[name]=callback.name;
-			CACHE.setVal(id,callback.id);
-		}
-		if(CACHE.getVal('contentid')!=null){
-			$scope.input.action="edit";
-			$scope.view.button="Thay đổi";
-			$scope.view.new_name=true;
-		}else{
-			$scope.input.action="add";
-			$scope.view.button="Tạo mới";
-			$scope.view.new_name=false;
-		}
-		$scope[items]=[];
-		$scope.check_complete();	
+	var Read=function(){
+		DB.ReadUserReceive('sms').then(function(result) {
+			$scope.users=result.data;
+			},function(err) {console.log(err);}
+		);		
 	}
-	$scope.check_complete=function(){
-		if(($scope.input.contentname!='')
-			&&(CACHE.getVal('storeid')!=null)
-			&&(CACHE.getVal('chemicalid')!=null)
-			&&(CACHE.getVal('typeid')!=null)
-			&&(CACHE.getVal('unitsid')!=null)
-			&&(CACHE.getVal('fieldid')!=null)
-			&&(CACHE.getVal('manufactorid')!=null)
-			&&(CACHE.getVal('providerid')!=null)
-			&&(CACHE.getVal('purityid')!=null)
-			&&(CACHE.getVal('stateid')!=null)
-			){
-			$scope.view.complete=true;
-		}else{
-			$scope.view.complete= false;
-		}
-		console.log($scope.input.contentname);
-		console.log($scope.input.contentid);
-		console.log('storeid : '+CACHE.getVal('storeid'));
-		console.log('chemicalid : '+CACHE.getVal('chemicalid'));
-		console.log('typeid : '+CACHE.getVal('typeid'));
-		console.log('unitsid : '+CACHE.getVal('unitsid'));
-		console.log('fieldid : '+CACHE.getVal('fieldid'));
-		console.log('manufactorid : '+CACHE.getVal('manufactorid'));
-		console.log('providerid : '+CACHE.getVal('providerid'));
-		console.log('purityid : '+CACHE.getVal('purityid'));
-		console.log('stateid : '+CACHE.getVal('stateid'));
-		console.log('complete : '+$scope.view.complete);
-	}
-	$scope.add_process=function(){
-		$scope.input.contentid=CACHE.getVal('contentid');
-		$scope.input.chemicalid=CACHE.getVal('chemicalid');
-		$scope.input.typeid=CACHE.getVal('typeid');
-		$scope.input.unitsid=CACHE.getVal('unitsid');
-		$scope.input.fieldid=CACHE.getVal('fieldid');
-		$scope.input.manufactorid=CACHE.getVal('manufactorid');
-		$scope.input.providerid=CACHE.getVal('providerid');
-		$scope.input.purityid=CACHE.getVal('purityid');
-		$scope.input.stateid=CACHE.getVal('stateid');
-		$scope.input.storeid=CACHE.getVal('storeid');
-		DB.fullinfo($scope.input).then(function(result){
-			$ionicPopup.alert({title: result.data.status,template: result.data.message});
-			if(result.data.result=="ok"){
-				$scope.input.contentname='';
-				$scope.input.chemicalname='';
-				$scope.input.typename='';
-				$scope.input.unitsname='';
-				$scope.input.fieldname='';
-				$scope.input.manufactorname='';
-				$scope.input.providername='';
-				$scope.input.purityname='';
-				$scope.input.statename='';
-				$scope.input.storename='';		
-				CACHE.clear('contentid');
-				CACHE.clear('chemicalid');
-				CACHE.clear('typeid');
-				CACHE.clear('unitsid');
-				CACHE.clear('fieldid');
-				CACHE.clear('manufactorid');
-				CACHE.clear('providerid');
-				CACHE.clear('purityid');
-				CACHE.clear('stateid');
-				CACHE.clear('storeid');
-				$scope.view.new_name=false;
-			}
-		})
-	}
-	$scope.add_del=function(){
-		var send=[];
-		send.contentid=CACHE.getVal('contentid');
-		send.action='del';
-		DB.fullinfo(send).then(function(result){
-			$ionicPopup.alert({title: result.data.status,template: result.data.message});
-			if(result.data.result=="ok"){
-				$scope.input.action="add";
-				$scope.input.contentname='';
-				$scope.input.chemicalname='';
-				$scope.input.typename='';
-				$scope.input.unitsname='';
-				$scope.input.fieldname='';
-				$scope.input.manufactorname='';
-				$scope.input.providername='';
-				$scope.input.purityname='';
-				$scope.input.statename='';
-				$scope.input.storename='';		
-				CACHE.clear('contentid');
-				CACHE.clear('chemicalid');
-				CACHE.clear('typeid');
-				CACHE.clear('unitsid');
-				CACHE.clear('fieldid');
-				CACHE.clear('manufactorid');
-				CACHE.clear('providerid');
-				CACHE.clear('purityid');
-				CACHE.clear('stateid');
-				CACHE.clear('storeid');
-				$scope.view.new_name=false;
-			}
-		})
-	}
-	
+	Read();
 })
-*/
+.controller('device_email', function($scope,$ionicPopup,$timeout,DB) {
+	$scope.show={del:false,edit:false};
+	$scope.users={};
+	$scope.edit = function(id,name) {
+		$scope.tosend={};
+		$scope.tosend.id=id;
+		$scope.tosend.content='email';
+		var myPopup = $ionicPopup.show({
+			template: '<input type="text" placeholder="Tên" ng-model="tosend.newname"><input type="text" placeholder="SĐT" ng-model="tosend.newemail">',
+			title: name,
+			subTitle: 'Nhập thông tin mới',
+			scope: $scope,
+			buttons: [{ text: 'Cancel' },{text: '<b>Save</b>',type: 'button-positive',
+				onTap: function(e) {
+					if ((!$scope.tosend.newname)||(!$scope.tosend.newemail)) {
+						e.preventDefault();
+					} else {
+						return $scope.tosend;
+					}
+				}
+			},]
+		});
+		myPopup.then(function(res) {
+			DB.EditUserReceive(res.content,res.id,res.newname,res.newemail).then(function(result) {
+				var mypop=$ionicPopup.alert({
+					title: 'Kết quả',
+					template: result.data.result
+				});
+				Read();
+				$timeout(function() {mypop.close();}, 2000);
+			},function(err) {console.log(err);}
+			);
+		});
+	}
+	$scope.add = function() {
+		$scope.tosend={};
+		$scope.tosend.content='email';
+		var myPopup = $ionicPopup.show({
+			template: '<input type="text" placeholder="Tên" ng-model="tosend.newname"><p></p><input type="text" placeholder="Email" ng-model="tosend.newemail">',
+			title: 'Thêm mới',
+			subTitle: 'Nhập thông tin mới',
+			scope: $scope,
+			buttons: [{ text: 'Cancel' },{text: '<b>Save</b>',type: 'button-positive',
+				onTap: function(e) {
+					if ((!$scope.tosend.newname)||(!$scope.tosend.newemail)) {
+						e.preventDefault();
+					} else {
+						return $scope.tosend;
+					}
+				}
+			},]
+		});
+		myPopup.then(function(res) {
+			DB.AddUserReceive(res.content,res.newname,res.newemail).then(function(result) {
+				var mypop=$ionicPopup.alert({
+					title: 'Kết quả',
+					template: result.data.result
+				});
+				Read();
+				$timeout(function() {mypop.close();}, 2000);
+			},function(err) {console.log(err);}
+			);
+		});
+	}
+	$scope.del = function(id,name,phone) {
+		$scope.tosend={};
+		$scope.tosend.content='email';
+		$scope.tosend.id=id;
+		var myPopup = $ionicPopup.show({
+			template: name+'<p>'+phone+'</p>',
+			title: 'Xác nhận xóa',
+			subTitle: name,
+			scope: $scope,
+			buttons: [{ text: 'Cancel' },{text: '<b>Xóa</b>',type: 'button-assertive',
+				onTap: function(e) {
+					if (!$scope.tosend.id) {
+						e.preventDefault();
+					} else {
+						return $scope.tosend;
+					}
+				}
+			},]
+		});
+		myPopup.then(function(res) {
+			DB.DelUserReceive(res.content,res.id).then(function(result) {
+				var mypop=$ionicPopup.alert({
+					title: 'Kết quả',
+					template: result.data.result
+				});
+				Read();
+				$timeout(function() {mypop.close();}, 2000);
+			},function(err) {console.log(err);}
+			);				
+		});
+	};
+	var Read=function(){
+		DB.ReadUserReceive('email').then(function(result) {
+			$scope.users=result.data;
+			},function(err) {console.log(err);}
+		);		
+	}
+	Read();
+})

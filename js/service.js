@@ -34,120 +34,38 @@ angular.module('services', [])
 })
 .factory('DB', function($http) {
     return {
-        autocomplete: function(table,key) {
-            return $http.post('process/autocomplete.php',{'type':table, 'term':key});
+        gettemp: function() {
+            return $http.post('process/p.status.sensor.php',{'sensor':'temp'});
         },
-		fullinfo: function(data) {
-            return $http.post('process/chemical.fullinfo.php',{
-				'action':data.action,
-				'id':data.contentid,
-				'name':data.contentname,
-				'chemical':data.chemicalid,
-				'type':data.typeid,
-				'manufactor':data.manufactorid,
-				'provider':data.providerid,
-				'units':data.unitsid,
-				'purity':data.purityid,
-				'store':data.storeid,
-				'field':data.fieldid,
-				'state':data.stateid});
+		gethumi: function() {
+            return $http.post('process/p.status.sensor.php',{'sensor':'humi'});
         },
-		chemical_import: function(data) {
-            return $http.post('process/chemical.import.php',{
-				'content':data.contentid,
-				'weight':data.weight,
-				'code':data.code,
-				'lot':data.lot,
-				'receive':data.receive,
-				'expired':data.expired,
-				'open_date':data.opens,
-				'user_receive':data.user_receiveid,
-				'user_open':data.user_openid,
-				'description':data.desc
-				});
+		RenameDevice: function(nameid,newname) {
+            return $http.post('process/p.device.php',{'action':'rename','nameid':nameid,'newname':newname});
         },
-		toolChemical: function(data) {
-            return $http.post('process/chemical.add.php',{
-				'action':data.action,
-				'id':data.id,
-				'name':data.name,
-				'type':data.typeid,
-				'new_name':data.new_name,
-				'properties':data.properties});
+		ChangeRange: function(id,type,min,max) {
+            return $http.post('process/p.sensor.range.php',{'type':type,'id':id,'min':min,'max':max});
         },
-		manufactor: function(data) {
-            return $http.post('process/util.manufactor.php',{
-				'action':data.action,
-				'id':data.id,
-				'name':data.name,
-				'code':data.code,
-				'address':data.address,
-				'contact':data.contact});
+		AddDevice: function(serial,name) {
+            return $http.post('process/p.device.php',{'action':'add','serial':serial,'name':name});
         },
-		units: function(data) {
-            return $http.post('process/util.units.php',{
-				'action':data.action,
-				'id':data.id,
-				'name':data.name,
-				'symbol':data.symbol});
+		SetConfig: function(key,value) {
+            return $http.post('process/p.config.php',{'action':'edit','key':key,'value':value});
         },
-		field: function(data) {
-            return $http.post('process/util.field.php',{
-				'action':data.action,
-				'id':data.fieldid,
-				'name':data.fieldname,
-				'user':data.userid});
+		ReadConfig: function() {
+            return $http.post('process/p.config.php',{'action':'read'});
         },
-		provider: function(data) {
-            return $http.post('process/util.provider.php',{
-				'action':data.action,
-				'id':data.id,
-				'name':data.name,
-				'code':data.code,
-				'address':data.address,
-				'contact':data.contact});
+		ReadUserReceive: function(content) {
+            return $http.post('process/p.user.php',{'action':'read','content':content});
         },
-		purity: function(data) {
-            return $http.post('process/util.purity.php',{
-				'action':data.action,
-				'id':data.id,
-				'name':data.name});
+		EditUserReceive: function(content,id,newname,newvalue) {
+            return $http.post('process/p.user.php',{'action':'edit','content':content,'id':id,'name':newname,'value':newvalue});
         },
-		store: function(data) {
-            return $http.post('process/util.store.php',{
-				'action':data.action,
-				'id':data.id,
-				'name':data.name});
+		AddUserReceive: function(content,name,newvalue) {
+            return $http.post('process/p.user.php',{'action':'add','content':content,'name':name,'value':newvalue});
         },
-		state: function(data) {
-            return $http.post('process/util.state.php',{
-				'action':data.action,
-				'id':data.stateid,
-				'name':data.statename});
-        },
-		type: function(data) {
-            return $http.post('process/util.type.php',{
-				'action':data.action,
-				'id':data.typeid,
-				'name':data.typename,
-				'description':data.description});
-        },
-		user_info: function(data) {
-            return $http.post('process/user.info.php',{
-				'action':data.action,
-				'id':data.id,
-				'name':data.name,
-				'username':data.username,
-				'password':data.password,
-				'email':data.email,
-				'phone':data.phone,
-				'birthday':data.birthday,
-				'joins':data.joins,
-				'quit':data.quit,
-				'school':data.school,
-				'branch':data.branch,
-				'position':data.position,
-				'address':data.address});
+		DelUserReceive: function(content,id) {
+            return $http.post('process/p.user.php',{'action':'del','content':content,'id':id});
         }
     };
 })
