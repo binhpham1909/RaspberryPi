@@ -16,7 +16,9 @@ class SIM900A:
 # Module function
 	def checkModule(self):
 		respone = ''
-		self.ser.write('AT\r\n');
+		self.ser.reset_input_buffer()
+		self.ser.reset_output_buffer()
+		self.ser.write('AT\r\n')
 		time.sleep(1)
 		while ser.inWaiting() > 0:
 			respone += self.ser.read(1)
@@ -26,6 +28,8 @@ class SIM900A:
 			return 0
 	def checkSIM(self):
 		respone = ''
+		self.ser.reset_input_buffer()
+		self.ser.reset_output_buffer()
 		self.ser.write('AT+CPIN?' + '\r\n');
 		time.sleep(1)
 		while ser.inWaiting() > 0:
@@ -36,6 +40,8 @@ class SIM900A:
 			return 0
 	def resetDefaultConfig(self):
 		respone = ''
+		self.ser.reset_input_buffer()
+		self.ser.reset_output_buffer()
 		self.ser.write('ATZ\r\n');
 		time.sleep(1)
 		while ser.inWaiting() > 0:
@@ -46,6 +52,8 @@ class SIM900A:
 			return 0
 	def setCommandEcho(self, echoMode):
 		respone = ''
+		self.ser.reset_input_buffer()
+		self.ser.reset_output_buffer()
 		if(!echoMode):
 			self.ser.write('ATE0\r\n');
 		else:
@@ -60,6 +68,8 @@ class SIM900A:
 # function for call
 	def enableCallerInfo(self):
 		respone = ''
+		self.ser.reset_input_buffer()
+		self.ser.reset_output_buffer()
 		self.ser.write('AT+CLIP=1\r\n');
 		time.sleep(1)
 		while ser.inWaiting() > 0:
@@ -70,6 +80,8 @@ class SIM900A:
 			return 0
 	def callNumber(self, phonenumber):
 		respone = ''
+		self.ser.reset_input_buffer()
+		self.ser.reset_output_buffer()
 		self.ser.write('ATD%s;\r\n'%(phonenumber));
 		time.sleep(2)
 		while ser.inWaiting() > 0:
