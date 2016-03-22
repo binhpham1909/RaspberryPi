@@ -62,13 +62,14 @@ def HandlerAlert(hw):
 		time.sleep(1)
 	db.CloseDb()
 def HandlerSms():
-	gsm=sim900a.SIM900A('/dev/ttyAMA0',115200)
-	db=database.DB(MYSQL_HOST,MYSQL_USER,MYSQL_PASS,MYSQL_DB)
-	nowtime= int(round(time.time() * 1000*1000))	#seconds
-	lasttime=nowtime
+	gsm = sim900a.SIM900A('/dev/ttyAMA0',115200)
+	db = database.DB(MYSQL_HOST,MYSQL_USER,MYSQL_PASS,MYSQL_DB)
+	gsm.Connect()
+	nowtime = int(round(time.time() * 1000*1000))	#seconds
+	lasttime = nowtime - 600
 	while 1:
 		nowtime= int(round(time.time() * 1000*1000))	#seconds
-		if((nowtime-lasttime)>600):
+		if((nowtime-lasttime)>=600):
 			if(db.GetSetting('sms_pending')):
 				print "Start send sms at: %s"%(time.asctime( time.localtime(time.time()) ))
 				sys.stdout.flush()
@@ -76,13 +77,11 @@ def HandlerSms():
 				rcs=db.GetRecipientSMS()
 				ctn=db.GetAlertContent()
 				for rc in rcs:
-					gsm.Connect()
-					print "Phone:\t %s \nContent:\t %s"%(rc,ctn)
-					sys.stdout.flush()
 					gsm.SendSMS(rc,ctn)
-					gsm.Disconnect()
-				db.WasSendSms()
+				db.SetSetting('sms_pending',0)
+		if(db.GetSetting('ussd_pending')):
 		time.sleep(1)
+	gsm.Disconnect()
 	db.CloseDb()
 def HanlerEmail():
 	db=database.DB(MYSQL_HOST,MYSQL_USER,MYSQL_PASS,MYSQL_DB)
