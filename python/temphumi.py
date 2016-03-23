@@ -22,7 +22,7 @@ bellbtn=27
 bellout=22
 
 hw=hware.HARDWARE(alertbtn,alertled,smsbtn,smsled,ringbtn,ringsms,bellbtn,bellout)
-
+gsm900 = sim900a.SIM900A('/dev/ttyAMA0',115200)
 
 
 # socket
@@ -61,12 +61,17 @@ def HandlerAlert(hw):
 			hw.RingBell(0)
 		time.sleep(1)
 	db.CloseDb()
-def HandlerSms():
-	gsm = sim900a.SIM900A('/dev/ttyAMA0',115200)
+def HandlerSIM900A(gsm):
 	db = database.DB(MYSQL_HOST,MYSQL_USER,MYSQL_PASS,MYSQL_DB)
 	gsm.Connect()
 	nowtime = int(round(time.time() * 1000*1000))	#seconds
 	lasttime = nowtime - 600
+	gsm.checkModule()
+	gsm.checkSIM()
+	gsm.resetDefaultConfig()
+	gsm.setCommandEcho(0)
+	gsm.enableCallerInfo(1)
+	
 	while 1:
 		nowtime= int(round(time.time() * 1000*1000))	#seconds
 		if((nowtime-lasttime)>=600):
@@ -77,9 +82,20 @@ def HandlerSms():
 				rcs=db.GetRecipientSMS()
 				ctn=db.GetAlertContent()
 				for rc in rcs:
-					gsm.SendSMS(rc,ctn)
+					gsm.sendSMS(rc,ctn)
 				db.SetSetting('sms_pending',0)
-		if(db.GetSetting('ussd_pending')):
+
+#		if(db.GetSetting('ussd_pending')):
+		serrcv = gsm.readSerial(0)
+		if(serrcv!=''):
+			if(('+CRING' in serrcv) and ('VOICE' in serrcv)):
+				gsm.debug('Call incomming\r\n')
+				phonenum = gsm.extractPhoneCall(serrcv)
+				phonenum = gsm.convertPhoneGlobal('+84',phonenum)
+				gsm.debug(phonenum + '\r\n')
+				gsm.acceptCall()
+				time.sleep(3)
+				gsm.hangupCall()
 		time.sleep(1)
 	gsm.Disconnect()
 	db.CloseDb()
@@ -124,7 +140,7 @@ def HandlerSensor(serial1,temp,humi):
 	return trave
 
 start_new_thread(HandlerAlert ,(hw,))
-start_new_thread(HandlerSms ,())
+start_new_thread(HandlerSIM900A ,(gsm900,))
 #start_new_thread(HanlerEmail ,())
 try:
 	#create an AF_INET, STREAM socket (TCP)

@@ -2,6 +2,7 @@
 # coding=utf-8  
 import time
 import serial
+import sys
 
 class SIM900A:
 # connection
@@ -15,12 +16,12 @@ class SIM900A:
 	def Disconnect(self):
 		self.ser.close()
 	def flushSerial(self):
-		self.ser.reset_input_buffer()
-		self.ser.reset_output_buffer()
+		self.ser.flushInput()
+		self.ser.flushOutput()
 	def readSerial(self, timewait):
 		respone = ''
 		time.sleep(timewait)
-		while ser.inWaiting() > 0:
+		while self.ser.inWaiting() > 0:
 			respone += self.ser.read(1)
 		return respone
 #debug 
@@ -35,7 +36,7 @@ class SIM900A:
 		self.debug('Check module SIM900A.\r\n')
 		self.debug('>>: AT\r\n')
 		time.sleep(1)
-		respone = self.readSerial()
+		respone = self.readSerial(1)
 		self.debug('<<: '+respone)
 		if('OK' in respone):
 			return 1
@@ -66,7 +67,7 @@ class SIM900A:
 	def setCommandEcho(self, echoMode):
 		self.flushSerial()
 		self.debug('Set command echo.\r\n')
-		if(!echoMode):
+		if(not echoMode):
 			self.ser.write('ATE0\r\n');
 			self.debug('Echo command OFF\r\n')
 			self.debug('>>: ATE0\r\n')
@@ -84,7 +85,7 @@ class SIM900A:
 	def enableCallerInfo(self, mode):
 		self.flushSerial()
 		self.debug('Enable/Disable caller info.\r\n')
-		if(!mode):
+		if(not mode):
 			self.ser.write('AT+CLIP=0\r\n');
 			self.debug('>>: AT+CLIP=0\r\n')
 			self.debug('Disable caller info.\r\n')
@@ -145,7 +146,16 @@ class SIM900A:
 			return 1
 		else:
 			return 0
-
+	def extractPhoneCall(self, stphone):
+		# extract number +CLIP: "0988472989",161,"",,"",0
+		self.debug('extract phone number\r\n');
+		StBrake = stphone.find('+CLIP',0)
+		StBrake = stphone.find('"',StBrake)
+		NdBrake = stphone.find('"',StBrake)
+		phoneNumber = stphone[StBrake:NdBrake]
+		return phoneNumber
+	def convertPhoneGlobal(self, zipcode, phonenum):
+		return zipcode + phonenum[1:]
 #function for SMS
 	def setSMSTextMode(self, mode):
 		self.ser.write('AT+CMGF==%d\r\n'%(mode));
@@ -157,7 +167,7 @@ class SIM900A:
 			return 1
 		else:
 			return 0		
-	def SendSMS(self, number, content):
+	def sendSMS(self, number, content):
 #		self.resetDefaultConfig()
 		self.setSMSTextMode(1)
 		self.ser.write("AT+CMGS=%s\r\n"%(number))
@@ -168,4 +178,5 @@ class SIM900A:
 		self.ser.write(chr(26))
 		time.sleep(1)
 	def readSMS(self):
+		a=1
 	
